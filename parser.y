@@ -7,15 +7,15 @@ int yylex();
 %}
 %union{
   TreeNode* node;
-  OpType op;
+  union {OpType op; Coordinate* pos;} detail;
 };
 
 %token <node> NUM ID STR
 %token <node> INT CHAR BOOLEAN VOID 
-%token <op> ADD MIN MUL DIV MOD DADD DMIN ASSIGN EQU 
-%token <op> GTR LSS GEQ LEQ NEQ LOGICAL_AND LOGICAL_OR LOGICAL_NOT UMIN UADD
-%token <op> SEM LB RB COM LP RP LBK RBK
-%token <op> FOR INPUT OUTPUT ELSE DO MAIN IF WHILE CONST RETURN
+%token <detail> ADD MIN MUL DIV MOD DADD DMIN ASSIGN EQU 
+%token <detail> GTR LSS GEQ LEQ NEQ LOGICAL_AND LOGICAL_OR LOGICAL_NOT UMIN UADD
+%token <detail> SEM LB RB COM LP RP LBK RBK
+%token <detail> FOR INPUT OUTPUT ELSE DO MAIN IF WHILE CONST RETURN
 %token <node> EOL
 
 %type <node> expression expr 
@@ -38,7 +38,7 @@ int yylex();
 %left  DADD DMIN 
 %%
 
-program 	:  block_item_list       { $$ = newProgramNode($1); Operate($$); }
+program 	:  block_item_list       { $$ = newProgramNode($1);$$->pos = $1->pos ; Operate($$); }
 
 block_item_list   		:  block_item block_item_list {
 							if($$ == NULL) {
@@ -63,27 +63,27 @@ statement   :  	MAIN LP RP compound_statement { $$ = $4; }
 			|  	expression_statement  	{ $$ = $1; }
 			;
 
-compound_statement 		: 	LB block_item_list RB {$$ = newComStmtNode($2); }
+compound_statement 		: 	LB block_item_list RB {$$ = newComStmtNode($2); $$->pos = $1.pos;}
 		 				;
 
-IO_statement			:	INPUT LP expr RP SEM { $$ = newInputStmtNode($3); }
-						|	OUTPUT LP expr RP SEM{ $$ = newOutputStmtNode($3); }
+IO_statement			:	INPUT LP expr RP SEM { $$ = newInputStmtNode($3); $$->pos = $1.pos;}
+						|	OUTPUT LP expr RP SEM{ $$ = newOutputStmtNode($3); $$->pos = $1.pos;}
 						;
 
-if_stmt :   IF LP expr RP statement  { $$ = newIfStmtNode($3, $5); }
+if_stmt :   IF LP expr RP statement  { $$ = newIfStmtNode($3, $5); $$->pos = $1.pos;}
 		;
 
-else_stmt     :  ELSE statement { $$ = newElseStmtNode($2); } 
+else_stmt     :  ELSE statement { $$ = newElseStmtNode($2); $$->pos = $1.pos;} 
               ; 
 
-selection_statement		:  	if_stmt else_stmt 		{ $$ = newIfElseStmtNode($1, $2); }
+selection_statement		:  	if_stmt else_stmt 		{ $$ = newIfElseStmtNode($1, $2); $$->pos = $1->pos;}
 						|  	if_stmt         		{ $$ = $1; }
 						;	
 
-iteration_statement		:  	FOR LP expression SEM expression SEM expression RP statement { $$ = newForStmtNode($3, $5, $7, $9);}
-						|  	FOR LP declaration SEM expression SEM expression RP statement { $$ = newForStmtNode($3, $5, $7, $9);}
-						|	WHILE LP expression RP statement { $$ = newWhileStmtNode(WhileK, $3, $5); }
-						|	DO compound_statement WHILE LP expression RP SEM { $$ = newWhileStmtNode(DoWhileK, $2, $5); }
+iteration_statement		:  	FOR LP expression SEM expression SEM expression RP statement { $$ = newForStmtNode($3, $5, $7, $9);$$->pos = $1.pos;}
+						|  	FOR LP declaration SEM expression SEM expression RP statement { $$ = newForStmtNode($3, $5, $7, $9);$$->pos = $1.pos;}
+						|	WHILE LP expression RP statement { $$ = newWhileStmtNode(WhileK, $3, $5); $$->pos = $1.pos;}
+						|	DO compound_statement WHILE LP expression RP SEM { $$ = newWhileStmtNode(DoWhileK, $2, $5); $$->pos = $1.pos;}
 		   				;
 
 expression_statement	:	expression SEM	{ $$ = $1;}
@@ -93,32 +93,32 @@ expression	:	expr COM expression 	{ $1 -> sibling = $3; $$ = $1;}
 			| 							{ $$ = NULL;}
 			;
 
-expr	:	expr ADD expr	{ $$ = newExpNode($2, $1, $3); }
-		|	expr MIN expr	{ $$ = newExpNode($2, $1, $3); }
-		|	expr MUL expr	{ $$ = newExpNode($2, $1, $3); }
-		|	expr DIV expr	{ $$ = newExpNode($2, $1, $3); }
-        | 	expr MOD expr	{ $$ = newExpNode($2, $1, $3); }
-        |   expr DMIN       { $$ = newExpNode($2, $1, NULL); }
-        |   expr DADD       { $$ = newExpNode($2, $1, NULL); }
-        |   expr ASSIGN expr   { $$ = newExpNode($2, $1, $3); }
-        |   expr EQU expr   { $$ = newExpNode($2, $1, $3); }
-        |   expr GTR expr   { $$ = newExpNode($2, $1, $3); }
-        |   expr LSS expr   { $$ = newExpNode($2, $1, $3); }
-        |   expr GEQ expr   { $$ = newExpNode($2, $1, $3); }
-        |   expr LEQ expr   { $$ = newExpNode($2, $1, $3); }
-        |   expr NEQ expr   { $$ = newExpNode($2, $1, $3); }
-        |   expr LOGICAL_AND expr  { $$ = newExpNode($2, $1, $3); }
-        |   expr LOGICAL_OR expr   { $$ = newExpNode($2, $1, $3); }
-        |   LOGICAL_NOT expr   { $$ = newExpNode($1, $2, NULL); }
-        |   MIN expr %prec UMIN   { $$ = newExpNode($1, $2, NULL); }
-        |   ADD expr %prec UADD   { $$ = newExpNode($1, $2, NULL); }
+expr	:	expr ADD expr	{ $$ = newExpNode($2.op, $1, $3); }
+		|	expr MIN expr	{ $$ = newExpNode($2.op, $1, $3); }
+		|	expr MUL expr	{ $$ = newExpNode($2.op, $1, $3); }
+		|	expr DIV expr	{ $$ = newExpNode($2.op, $1, $3); }
+        | 	expr MOD expr	{ $$ = newExpNode($2.op, $1, $3); }
+        |   expr DMIN       { $$ = newExpNode($2.op, $1, NULL); }
+        |   expr DADD       { $$ = newExpNode($2.op, $1, NULL); }
+        |   expr ASSIGN expr   { $$ = newExpNode($2.op, $1, $3); }
+        |   expr EQU expr   { $$ = newExpNode($2.op, $1, $3); }
+        |   expr GTR expr   { $$ = newExpNode($2.op, $1, $3); }
+        |   expr LSS expr   { $$ = newExpNode($2.op, $1, $3); }
+        |   expr GEQ expr   { $$ = newExpNode($2.op, $1, $3); }
+        |   expr LEQ expr   { $$ = newExpNode($2.op, $1, $3); }
+        |   expr NEQ expr   { $$ = newExpNode($2.op, $1, $3); }
+        |   expr LOGICAL_AND expr  { $$ = newExpNode($2.op, $1, $3); }
+        |   expr LOGICAL_OR expr   { $$ = newExpNode($2.op, $1, $3); }
+        |   LOGICAL_NOT expr   { $$ = newExpNode($1.op, $2, NULL); }
+        |   MIN expr %prec UMIN   { $$ = newExpNode($1.op, $2, NULL); }
+        |   ADD expr %prec UADD   { $$ = newExpNode($1.op, $2, NULL); }
 		|	LP expr RP	    { $$ = $2; }
 		|	NUM             { $$ = $1; }   // $$=$1 can be ignored
         |   STR             { $$ = $1; }
 		|   ID              { $$ = $1; }
 		;
 
-declaration    			:   type_specifiers init_declarator_list SEM		{ $$ = newDeclNode($1, $2); }
+declaration    			:   type_specifiers init_declarator_list SEM		{ $$ = newDeclNode($1, $2); $$->pos = $1->pos;}
 			   			;
 
 type_specifiers 		:  INT       { $$ = $1; }
@@ -132,7 +132,7 @@ init_declarator_list	:	init_declarator								{ $$ = $1;}
 						;
 
 init_declarator			:	declarator									{ $$ = $1; }
-						|	declarator ASSIGN initializer				{ $$ = newInitNode($1, $3); }
+						|	declarator ASSIGN initializer				{ $$ = newInitNode($1, $3); $$->pos = $1->pos;}
 						;
 
 declarator				:	ID											{ $$ = $1; }

@@ -70,7 +70,8 @@ COM ,
 
 NUM 0|([1-9][0-9]*)|(0[1-7][0-7]*)|(0[Xx][1-9a-fA-F][0-9a-fA-F]*)
 
-WS [\t\r ]+
+B [ ]+
+T [\t]+
 
 ID [A-Za-z_][A-Za-z0-9_]*
 
@@ -82,7 +83,8 @@ STR (\"[^\"]*\")|(\'[^\']\')
 %%
 
 {line} {
-    lines++;   
+    lines++; 
+    columns = 1;  
 }
 <COMMENTS>{line} {
     lines++;
@@ -91,171 +93,257 @@ STR (\"[^\"]*\")|(\'[^\']\')
 
 {commentsbegin} {BEGIN COMMENTS;} 
 <COMMENTS>{commentselement} {} 
-<COMMENTS>{commentsend} {BEGIN INITIAL;}
+<COMMENTS>{commentsend} {columns = 1; BEGIN INITIAL;}
 
 {commentbegin} {BEGIN COMMENT;} 
 <COMMENT>{commentelement} {} 
 <COMMENT>{commentend} {
+    columns = 1; 
     lines++;
     BEGIN INITIAL;
     }
 
 {IF} { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return IF;
     }
 {ELSE} { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return ELSE;
     }
 {WHILE} { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return WHILE;
     }
 {DO} { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return DO;
     }
 {FOR} { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return FOR;
     }
 {VOID} { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     yylval.node = newTypeNode(Void);
     return VOID;
     }
 {INT} { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     yylval.node = newTypeNode(Integer);
     return INT;
     }
 {CHAR} { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     yylval.node = newTypeNode(Char);
     return CHAR;
     }
 {BOOLEAN} { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     yylval.node = newTypeNode(Boolean);
     return BOOLEAN;
     }
 {CONST} { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return CONST;
     }
 {RETURN} { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return RETURN;
     }
 {INPUT} { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return INPUT; 
     }
 {OUTPUT} { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return OUTPUT; 
     }
 
-{MAIN} {
+{MAIN} { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return MAIN; 
     }
 
-{ADD}  { 
-    yylval.op = Add;
+{ADD}  {  
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
+    yylval.detail.op = Add;
     return ADD;
     }
 {MUL}  { 
-    yylval.op = Mul;
+    yylval.detail.pos = new Coordinate(lines, columns) ;
+    columns += yyleng;
+    yylval.detail.op = Mul;
     return MUL;
     }
 {MIN}  { 
-    yylval.op = Min;
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
+    yylval.detail.op = Min;
     return MIN;
     }
 {DIV}  { 
-    yylval.op = Div;
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
+    yylval.detail.op = Div;
     return DIV;
     }
 {MOD}  { 
-    yylval.op = Mod;
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
+    yylval.detail.op = Mod;
     return MOD;
     }
 {DADD}  { 
-    yylval.op = Dadd;
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
+    yylval.detail.op = Dadd;
     return DADD;
     }
 {DMIN}  { 
-    yylval.op = Dmin;
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
+    yylval.detail.op = Dmin;
     return DMIN;
     }
 {ASSIGN}  { 
-    yylval.op = Assign;
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
+    yylval.detail.op = Assign;
     return ASSIGN;
     }
 {EQU}  { 
-    yylval.op = Equ;
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
+    yylval.detail.op = Equ;
     return EQU;
     }
 {GTR}  { 
-    yylval.op = Gtr;
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
+    yylval.detail.op = Gtr;
     return GTR;
     }
 {LSS}  { 
-    yylval.op = Lss;
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
+    yylval.detail.op = Lss;
     return LSS;
     }
 {GEQ}  { 
-    yylval.op = Geq;
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
+    yylval.detail.op = Geq;
     return GEQ;
     }
 {LEQ}  { 
-    yylval.op = Leq;
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
+    yylval.detail.op = Leq;
     return LEQ;
     }
 {NEQ}  { 
-    yylval.op = Neq;
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
+    yylval.detail.op = Neq;
     return NEQ;
     }
 {LB}  { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return LB;
     } 
 {RB}  { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return RB;
     }
 {LP}  { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return LP;
     }
 {RP}  { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return RP;
     }
 {LBK}  { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return LBK;
     }
 {RBK}  { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return RBK;
     }
 
 {LOGICAL_AND}  { 
-    yylval.op = Logical_and;
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
+    yylval.detail.op = Logical_and;
     return LOGICAL_AND;
     }
 {LOGICAL_OR}  { 
-    yylval.op = Logical_or;
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
+    yylval.detail.op = Logical_or;
     return LOGICAL_OR;
     }
 {LOGICAL_NOT}  { 
-    yylval.op = Logical_not;
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
+    yylval.detail.op = Logical_not;
     return LOGICAL_NOT;
     }
 {SEM}  { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return SEM;
     }
 {COM}  { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return COM;
     }
 
 {ID} { 
-    yylval.node = newIdNode(strdup(yytext));
+    yylval.node = newStrConstNode(strdup(yytext));
+    yylval.node->pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return ID;   
     }
 {NUM} { 
-    yylval.node = newIntConstNode(strdup(yytext));
+    yylval.node = newStrConstNode(strdup(yytext));
+    yylval.node->pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return NUM;
     }
 {STR} {
     yylval.node = newStrConstNode(strdup(yytext));
+    yylval.node->pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return STR;
 }
 
-{WS} {}
+{B} {columns += yyleng;}
+{T} {columns += yyleng*4;}
 
 %%
 

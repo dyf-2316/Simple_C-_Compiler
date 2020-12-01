@@ -3,6 +3,7 @@
 #include <string>
 #include <iomanip>
 #include <unordered_map>
+#include "Sym_table_map.h"
 
 #define MAXCHILDREN 6
 
@@ -23,7 +24,7 @@ public:
     int id;
     TreeNode* childs[MAXCHILDREN];
     TreeNode* sibling; // 用于遍历同层次的兄弟节点
-    int lineno;
+    Coordinate* pos;
     NodeKind nodekind;
     union { StmtKind stmt; ExpKind exp; DeclKind decl;} kind;
     union {

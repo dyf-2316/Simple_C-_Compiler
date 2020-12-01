@@ -1,6 +1,7 @@
 #include "TreeNode.h"
 int nodes = 0;
 unordered_map<int, string> optMap;
+Sym_table_map symTables;
 
 TreeNode * newTreeNode(NodeKind nodekind, int kind) {
     TreeNode * t = new TreeNode(NodeKind(nodekind), kind);
@@ -51,8 +52,9 @@ void ConstructMap() {
     
 }
 
-void Operate(TreeNode* p) {
-    Display(p);
+void Operate(TreeNode* node) {
+    // BuildSymTable(node, nullptr);
+    Display(node);
 }
 
 void Display(TreeNode* p){
@@ -168,7 +170,11 @@ void ShowNode(TreeNode *p) {
             }
         }
     }
-    cout << endl;
+    if(p->nodekind == ExpK && p->kind.exp == OpK){
+        cout << endl;
+    }else{
+        cout << setw(20) << "line:" << p->pos->line << setw(20) << "column:" << p->pos->column << endl;
+    }
 }
 
 TreeNode* newProgramNode(TreeNode* program){
