@@ -128,11 +128,12 @@ type_specifiers 		:  INT       { $$ = $1; }
 declaration    			:   type_specifiers init_declarator_list		{ $$ = newDeclNode($1, $2); }
 			   			;
 
-init_declarator_list	:	init_declarator								{ $$ = $1; }
-						|	init_declarator_list COM init_declarator 	{ $1 -> sibling = $3; $$ = $1; }
+init_declarator_list	:	init_declarator								{ $$ = $1;}
+						|	init_declarator COM init_declarator_list	{ $1 -> sibling = $3; $$ = $1;}
 						;
 
 init_declarator			:	declarator									{ $$ = $1; }
+						|	declarator ASSIGN initializer				{ $$ = newInitNode($1, $3); }
 						;
 
 declarator				:	ID											{ $$ = $1; }

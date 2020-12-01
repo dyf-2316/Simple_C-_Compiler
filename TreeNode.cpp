@@ -22,7 +22,7 @@ TreeNode::TreeNode(NodeKind nodekind, int kind) {
         this->kind.exp = ExpKind(kind);
         break;
     case DeclK:
-        this->kind.type = DeclType(kind);
+        this->kind.decl = DeclKind(kind);
         break;
     }
     this->node_id = nodes++; // 全局变量
@@ -142,7 +142,15 @@ void ShowNode(TreeNode *p) {
             }
         }
     } else if (p->nodekind == DeclK) {
-        type = "Var Declaration";
+        switch (p->kind.decl)
+        {
+        case _DeclK:
+            type = "Var Declaration";
+            break;
+        case InitK:
+            type = "Var initializer";
+            detail = "op: " + optMap.at(p->attr.op);
+        }
         
     }
     cout << p->node_id << setw(20) << type << setw(20) << detail << setw(20) << child_lineno;
@@ -256,11 +264,19 @@ TreeNode* newForStmtNode(TreeNode* exp_1, TreeNode* exp_2, TreeNode* exp_3, Tree
 }
 
 TreeNode * newDeclNode(TreeNode* type, TreeNode *idlist) {
-    TreeNode *node = newTreeNode(DeclK, type->kind.type);
+    TreeNode *node = newTreeNode(DeclK, _DeclK);
     node->childs[0] = type;
     node->childs[1] = idlist;
-    TreeNode *temp = idlist;
+    node->type = type->type;
     // 符号表在语法树建好后自顶向下构建
+    return node;
+}
+
+TreeNode* newInitNode(TreeNode* id, TreeNode* init){
+    TreeNode *node = newTreeNode(DeclK, InitK);
+    node -> childs[0] = id;
+    node -> childs[1] = init;
+    node->attr.op = Assign;
     return node;
 }
 
