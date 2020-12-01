@@ -27,7 +27,7 @@ TreeNode::TreeNode(NodeKind nodekind, int kind) {
     case ProgK:
         break;
     }
-    this->node_id = nodes++; // 全局变量
+    this->id = nodes++; // 全局变量
 }
 
 void ConstructMap() {
@@ -157,13 +157,13 @@ void ShowNode(TreeNode *p) {
         type = "Program";
     }
     
-    cout << p->node_id << setw(20) << type << setw(20) << detail << setw(20) << child_lineno;
+    cout << p->id << setw(20) << type << setw(20) << detail << setw(20) << child_lineno;
     for (int i = 0; i < MAXCHILDREN; ++i) {
         if (p->childs[i] != NULL) {
-            cout << p->childs[i]->node_id << "   ";
+            cout << p->childs[i]->id << "   ";
             TreeNode *temp = p->childs[i];
             while (temp->sibling != NULL) {
-                cout << temp->sibling->node_id << "   ";
+                cout << temp->sibling->id << "   ";
                 temp = temp->sibling;
             }
         }

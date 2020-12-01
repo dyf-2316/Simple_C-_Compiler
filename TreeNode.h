@@ -20,6 +20,7 @@ typedef enum {Add, Min, Mul, Div, Mod, Dadd, Dmin, Assign,
 extern unordered_map<int, string> optMap;
 class TreeNode {
 public:
+    int id;
     TreeNode* childs[MAXCHILDREN];
     TreeNode* sibling; // 用于遍历同层次的兄弟节点
     int lineno;
@@ -32,7 +33,6 @@ public:
     }attr;
     DeclType type; // 用于类型检查：此节点的类
     TreeNode(NodeKind nodekind, int kind);
-    int node_id;
 };
 
 void Operate(TreeNode* p);
