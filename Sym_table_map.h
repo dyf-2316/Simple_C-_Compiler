@@ -1,7 +1,15 @@
+//
+// Created by DYF Macbook on 12/1/20.
+//
+
+#ifndef UNTITLED_SYM_TABLE_MAP_H
+#define UNTITLED_SYM_TABLE_MAP_H
 #include <unordered_map>
 #include <vector>
 #include <stack>
 #include <string>
+
+typedef enum {ValK, FunK, ArrK, StrK} SymKind;
 
 using  namespace std;
 
@@ -14,7 +22,9 @@ public:
 
     Coordinate(Coordinate const &pos) ;
 
-    Coordinate() {}
+    Coordinate() {};
+
+    bool operator < (const Coordinate& pos);
 
 };
 
@@ -44,6 +54,9 @@ public:
     void setScopeEnd(Coordinate scope_end);
 
     Symbol* insert_symbol(int id, const string& name, const Coordinate& pos);
+
+    Symbol* find(const string& name, Coordinate pos);
+
 };
 
 class Sym_table_map{
@@ -59,4 +72,7 @@ public:
     void end_sub_scope(int line, int column);
 
     Symbol* insert_symbol(const string& name, int line, int column);
+
+    Symbol* find(const string& name, int line, int column);
 };
+#endif //UNTITLED_SYM_TABLE_MAP_H

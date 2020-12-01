@@ -10,6 +10,14 @@ Coordinate :: Coordinate(Coordinate const &pos) {
     this->column = pos.column;
 }
 
+bool Coordinate :: operator < (const Coordinate& pos){
+    if(this->line < pos.line || (this->line == pos.line && this->column < pos.column)){
+        return true;
+    }else{
+        return false;
+    }
+}
+
 Symbol :: Symbol(int id, const string &name, const Coordinate& pos){
     this->id = id;
     this->name.assign(name);
@@ -68,4 +76,27 @@ Symbol* Sym_table_map :: insert_symbol(const string& name, int line, int column)
         id++ ;
     }
     return symbol;
+}
+
+Symbol* Sym_table_map :: find(const string& name, int line, int column){
+    Symbol* symbol = global_table->find(name, Coordinate(line, column));
+    return symbol;
+}
+
+Symbol* Sym_table :: find(const string& name, Coordinate pos) {
+    Symbol *symbol = nullptr;
+    if (symbol_map->count(name)) {
+        symbol = symbol_map->at(name);
+    }
+    Symbol *temp = nullptr;
+    for (int i = 0; i < sub_tables.size(); i++) {
+        if (sub_tables[i]->scope_begin < pos && pos < sub_tables[i]->scope_end) {
+            temp = sub_tables[i]->find(name, pos);
+        }
+    }
+    if(temp){
+        return temp;
+    }else{
+        return symbol;
+    }
 }
