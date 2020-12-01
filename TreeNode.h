@@ -9,7 +9,7 @@
 using namespace std;
 
 
-typedef enum {StmtK, ExpK, DeclK} NodeKind;
+typedef enum {StmtK, ExpK, DeclK, ProgK} NodeKind;
 typedef enum {IfK, IfElseK, ElseK, WhileK, DoWhileK, AssignK, ForK, CompK, InputK, PrintK} StmtKind;
 typedef enum {OpK,IntConstK,StrConstK,IdK,TypeK} ExpKind;
 typedef enum {_DeclK, InitK} DeclKind;
@@ -39,8 +39,9 @@ void Operate(TreeNode* p);
 void Display(TreeNode* p);
 void ShowNode(TreeNode* p);
 
-int GetOpEnum(char *op);
 void ConstructMap();
+
+TreeNode* newProgramNode(TreeNode* program);
 
 TreeNode* newTreeNode(NodeKind nodekind, int kind);
 TreeNode* newIntConstNode(char* num);

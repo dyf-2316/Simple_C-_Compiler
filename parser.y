@@ -18,9 +18,12 @@ int yylex();
 %token <op> FOR INPUT OUTPUT ELSE DO MAIN IF WHILE CONST RETURN
 %token <node> EOL
 
-%type <node> show_stmt expr stmt for_stmt com_stmt output_stmt input_stmt while_stmt stmts  
-%type <node> if_else_stmt if_stmt else_stmt
+%type <node> expression expr 
+%type <node> if_stmt else_stmt
 %type <node> type_specifiers declaration init_declarator_list init_declarator declarator initializer
+%type <node> statement compound_statement iteration_statement selection_statement IO_statement expression_statement
+%type <node> block_item_list block_item
+%type <node> program 
 
 %left COM
 %right ASSIGN
@@ -35,63 +38,60 @@ int yylex();
 %left  DADD DMIN 
 %%
 
-show_stmt : stmt           { $$ = $1; Operate($$); }
+program 	:  block_item_list       { $$ = newProgramNode($1); Operate($$); }
 
-stmt    :  MAIN LP RP com_stmt { $$ = $4; }
-		|  com_stmt        { $$ = $1; }
-		|  output_stmt     { $$ = $1; }
-		|  input_stmt      { $$ = $1; }
-		|  while_stmt      { $$ = $1; }
-		|  if_else_stmt    { $$ = $1; }
-		|  if_stmt         { $$ = $1; }
-		|  for_stmt        { $$ = $1; }
-		|  expr  SEM       { $$ = $1; }
-		|	declaration SEM		{ $$ = $1; }
-		|	SEM             	{ $$ = NULL; }
+block_item_list   		:  block_item block_item_list {
+							if($$ == NULL) {
+								$$ = $2;
+							}
+							else {
+								$1->sibling = $2; $$ = $1; 
+								}
+							}
+        				|  block_item { $$ = $1; }
+						;
+
+block_item				:	declaration		{ $$ = $1; }
+						| 	statement		{ $$ = $1; }
+						;
+
+statement   :  	MAIN LP RP compound_statement { $$ = $4; }
+			|  	compound_statement        { $$ = $1; }
+			|  	IO_statement    		{ $$ = $1; }
+			|	selection_statement		{ $$ = $1; }
+			|  	iteration_statement		{ $$ = $1; }
+			|  	expression_statement  	{ $$ = $1; }
+			;
+
+compound_statement 		: 	LB block_item_list RB {$$ = newComStmtNode($2); }
+		 				;
+
+IO_statement			:	INPUT LP expr RP SEM { $$ = newInputStmtNode($3); }
+						|	OUTPUT LP expr RP SEM{ $$ = newOutputStmtNode($3); }
+						;
+
+if_stmt :   IF LP expr RP statement  { $$ = newIfStmtNode($3, $5); }
 		;
 
-com_stmt : LB stmts RB {$$ = newComStmtNode($2); }
-		 ;
-
-stmts   :  stmt stmts 
-			{ if($$ == NULL) {
-					$$ = $2;
-				}
-				else {
-					$1->sibling = $2; $$ = $1; 
-				}
-			}
-        |  stmt { $$ = $1; }
-		;
-
-output_stmt  :  OUTPUT LP expr RP SEM{ $$ = newOutputStmtNode($3); }
-			 ;
-
-input_stmt :  INPUT LP expr RP SEM { $$ = newInputStmtNode($3); }
-		   ;
-
-while_stmt :  WHILE LP expr RP stmt { $$ = newWhileStmtNode(WhileK, $3, $5); }
-           |  DO com_stmt WHILE LP expr RP SEM { $$ = newWhileStmtNode(DoWhileK, $2, $5); }
-		   ;
-
-for_stmt   :  FOR LP expr SEM expr SEM expr RP stmt { $$ = newForStmtNode($3, $5, $7, $9);}
-		   |  FOR LP SEM expr SEM expr RP stmt { $$ = newForStmtNode(NULL, $4, $6, $8); }
-		   |  FOR LP expr SEM SEM expr RP stmt { $$ = newForStmtNode($3, NULL, $6, $8); }
-		   |  FOR LP expr SEM expr SEM RP stmt { $$ = newForStmtNode($3, $5, NULL, $8); }
-		   |  FOR LP SEM SEM expr RP stmt { $$ = newForStmtNode(NULL, NULL, $5, $7); }
-		   |  FOR LP SEM expr SEM RP stmt { $$ = newForStmtNode(NULL, $4, NULL, $7); }
-		   |  FOR LP expr SEM SEM RP stmt { $$ = newForStmtNode($3, NULL, NULL, $7); }
-		   |  FOR LP SEM SEM RP stmt { $$ = newForStmtNode(NULL, NULL, NULL, $6); }
-		   ;
-
-if_else_stmt : if_stmt else_stmt { $$ = newIfElseStmtNode($1, $2); }
-			 ;
-
-if_stmt :   IF LP expr RP stmt  { $$ = newIfStmtNode($3, $5); }
-		;
-
-else_stmt     :  ELSE stmt { $$ = newElseStmtNode($2); } 
+else_stmt     :  ELSE statement { $$ = newElseStmtNode($2); } 
               ; 
+
+selection_statement		:  	if_stmt else_stmt 		{ $$ = newIfElseStmtNode($1, $2); }
+						|  	if_stmt         		{ $$ = $1; }
+						;	
+
+iteration_statement		:  	FOR LP expression SEM expression SEM expression RP statement { $$ = newForStmtNode($3, $5, $7, $9);}
+						|  	FOR LP declaration SEM expression SEM expression RP statement { $$ = newForStmtNode($3, $5, $7, $9);}
+						|	WHILE LP expression RP statement { $$ = newWhileStmtNode(WhileK, $3, $5); }
+						|	DO compound_statement WHILE LP expression RP SEM { $$ = newWhileStmtNode(DoWhileK, $2, $5); }
+		   				;
+
+expression_statement	:	expression SEM	{ $$ = $1;}
+
+expression	:	expr COM expression 	{ $1 -> sibling = $3; $$ = $1;}
+			|	expr					{ $$ = $1;}
+			| 							{ $$ = NULL;}
+			;
 
 expr	:	expr ADD expr	{ $$ = newExpNode($2, $1, $3); }
 		|	expr MIN expr	{ $$ = newExpNode($2, $1, $3); }
@@ -118,15 +118,14 @@ expr	:	expr ADD expr	{ $$ = newExpNode($2, $1, $3); }
 		|   ID              { $$ = $1; }
 		;
 
+declaration    			:   type_specifiers init_declarator_list SEM		{ $$ = newDeclNode($1, $2); }
+			   			;
 
 type_specifiers 		:  INT       { $$ = $1; }
 						|  CHAR      { $$ = $1; }
 						|  BOOLEAN   { $$ = $1; }
 						|  VOID      { $$ = $1; }
 						;
-
-declaration    			:   type_specifiers init_declarator_list		{ $$ = newDeclNode($1, $2); }
-			   			;
 
 init_declarator_list	:	init_declarator								{ $$ = $1;}
 						|	init_declarator COM init_declarator_list	{ $1 -> sibling = $3; $$ = $1;}

@@ -22,6 +22,7 @@ commentend \n
 
 IF if
 ELSE else
+DO do
 WHILE while
 FOR for
 VOID void
@@ -107,6 +108,9 @@ STR (\"[^\"]*\")|(\'[^\']\')
     }
 {WHILE} { 
     return WHILE;
+    }
+{DO} { 
+    return DO;
     }
 {FOR} { 
     return FOR;

@@ -24,6 +24,8 @@ TreeNode::TreeNode(NodeKind nodekind, int kind) {
     case DeclK:
         this->kind.decl = DeclKind(kind);
         break;
+    case ProgK:
+        break;
     }
     this->node_id = nodes++; // 全局变量
 }
@@ -151,8 +153,10 @@ void ShowNode(TreeNode *p) {
             type = "Var initializer";
             detail = "op: " + optMap.at(p->attr.op);
         }
-        
+    } else if (p->nodekind == ProgK){
+        type = "Program";
     }
+    
     cout << p->node_id << setw(20) << type << setw(20) << detail << setw(20) << child_lineno;
     for (int i = 0; i < MAXCHILDREN; ++i) {
         if (p->childs[i] != NULL) {
@@ -165,6 +169,12 @@ void ShowNode(TreeNode *p) {
         }
     }
     cout << endl;
+}
+
+TreeNode* newProgramNode(TreeNode* program){
+    TreeNode* node = newTreeNode(ProgK, 0);
+    node ->childs [0] = program;
+    return node;
 }
 
 int str2int(string num){
