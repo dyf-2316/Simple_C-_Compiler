@@ -193,7 +193,7 @@ void ShowNode(TreeNode *p) {
         } else if (p->kind.exp == IdK) {
             type = "ID Declaration";
             if((Symbol*)p->attr.val){
-                detail = "symbol: " + ((Symbol*)p->attr.val)->name +"#"+ to_string(((Symbol*)p->attr.val)->id);
+                detail = "symbol: " + ((Symbol*)p->attr.val)->name +" #"+ to_string(((Symbol*)p->attr.val)->id);
             }else{
                 detail = "未声明";
             }
