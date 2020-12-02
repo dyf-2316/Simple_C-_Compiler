@@ -129,31 +129,32 @@ STR (\"[^\"]*\")|(\'[^\']\')
     return FOR;
     }
 {VOID} { 
-    yylval.detail.pos = new Coordinate(lines, columns);
-    columns += yyleng;
     yylval.node = newTypeNode(Void);
+    yylval.node->pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return VOID;
     }
 {INT} { 
-    yylval.detail.pos = new Coordinate(lines, columns);
-    columns += yyleng;
     yylval.node = newTypeNode(Integer);
+    yylval.node->pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return INT;
     }
 {CHAR} { 
-    yylval.detail.pos = new Coordinate(lines, columns);
-    columns += yyleng;
     yylval.node = newTypeNode(Char);
+    yylval.node->pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return CHAR;
     }
 {BOOLEAN} { 
-    yylval.detail.pos = new Coordinate(lines, columns);
-    columns += yyleng;
     yylval.node = newTypeNode(Boolean);
+    yylval.node->pos = new Coordinate(lines, columns);
+    columns += yyleng;
     return BOOLEAN;
     }
 {CONST} { 
-    yylval.detail.pos = new Coordinate(lines, columns);
+    yylval.node = newConstNode();
+    yylval.node->pos = new Coordinate(lines, columns);
     columns += yyleng;
     return CONST;
     }

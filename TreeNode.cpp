@@ -180,7 +180,11 @@ void ShowNode(TreeNode *p) {
             detail = "op: " + optMap.at(p->attr.op);
         } else if (p->kind.exp == IdK) {
             type = "ID Declaration";
-            detail = "symbol: " + ((Symbol*)p->attr.val)->name +"#"+ to_string(((Symbol*)p->attr.val)->id);
+            if((Symbol*)p->attr.val){
+                detail = "symbol: " + ((Symbol*)p->attr.val)->name +"#"+ to_string(((Symbol*)p->attr.val)->id);
+            }else{
+                detail = "未声明";
+            }
         } else if (p->kind.exp == IntConstK) {
             type = "IntConst Declaration";
             detail = "value: " + to_string(*((int*)p->attr.val));
@@ -215,6 +219,16 @@ void ShowNode(TreeNode *p) {
         case InitK:
             type = "Var initializer";
             detail = "op: " + optMap.at(p->attr.op);
+            break;
+        case ConstK:
+            type = "Const Specifier";
+            detail = "const";
+            break;
+        case SpecK:
+            type = "Declaration Specifier";
+            break;
+        default:
+                break;
         }
         
     } else if (p->nodekind == ProgK){
@@ -320,9 +334,21 @@ TreeNode* newTypeNode(DeclType type){
     return node;
 }
 
+TreeNode* newConstNode(){
+    TreeNode* node = newTreeNode(DeclK, ConstK);
+    return node;
+}
+
 TreeNode* newIdNode(char* name){
     TreeNode* node = newTreeNode(ExpK, IdK);
     node->attr.name = name;
+    return node;
+}
+
+TreeNode* newDeclSpecNode(TreeNode *spec1, TreeNode *spec2) {
+    TreeNode* node = new TreeNode(DeclK, SpecK);
+    node->childs[0] = spec1;
+    node->childs[1] = spec2;
     return node;
 }
 

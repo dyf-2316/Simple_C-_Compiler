@@ -13,7 +13,7 @@ using namespace std;
 typedef enum {StmtK, ExpK, DeclK, ProgK} NodeKind;
 typedef enum {IfK, IfElseK, ElseK, WhileK, DoWhileK, AssignK, ForK, CompK, InputK, PrintK} StmtKind;
 typedef enum {OpK,IntConstK,StrConstK,IdK,TypeK} ExpKind;
-typedef enum {_DeclK, InitK} DeclKind;
+typedef enum {_DeclK, InitK, ConstK, SpecK} DeclKind;
 typedef enum {Void,Integer,Char,Boolean} DeclType;
 
 typedef enum {Add, Min, Mul, Div, Mod, Dadd, Dmin, Assign,
@@ -51,6 +51,7 @@ TreeNode* newStrConstNode(char* str);
 TreeNode* newOpNode(OpType op);
 TreeNode* newTypeNode(DeclType type);
 TreeNode* newIdNode(char* name);
+TreeNode* newConstNode();
 
 TreeNode* newExpNode(OpType op, TreeNode *operand_1, TreeNode *operand_2);
 
@@ -59,6 +60,7 @@ TreeNode* newForStmtNode(TreeNode* exp_1, TreeNode* exp_2, TreeNode* exp_3, Tree
 
 TreeNode* newDeclNode(TreeNode* type, TreeNode *idlist);
 TreeNode* newInitNode(TreeNode* id, TreeNode* init);
+TreeNode* newDeclSpecNode(TreeNode *spec1, TreeNode *spec2);
 
 TreeNode* newWhileStmtNode(int kind, TreeNode* expr, TreeNode* stmt);
 TreeNode* newIfStmtNode(TreeNode *expr, TreeNode *stmt);
