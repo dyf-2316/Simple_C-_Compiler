@@ -41,6 +41,7 @@ void Display(TreeNode* p);
 void ShowNode(TreeNode* p);
 
 void ConstructMap();
+void BuildSymTable(TreeNode *node, TreeNode *paras);
 
 TreeNode* newProgramNode(TreeNode* program);
 

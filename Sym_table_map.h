@@ -5,6 +5,8 @@
 #ifndef UNTITLED_SYM_TABLE_MAP_H
 #define UNTITLED_SYM_TABLE_MAP_H
 #include <unordered_map>
+#include <iostream>
+#include <iomanip>
 #include <vector>
 #include <stack>
 #include <string>
@@ -21,6 +23,8 @@ public:
     Coordinate(int line, int column) ;
 
     Coordinate(Coordinate const &pos) ;
+
+    Coordinate(Coordinate *pos);
 
     Coordinate() {};
 
@@ -64,15 +68,18 @@ class Sym_table_map{
 public:
     Sym_table* global_table;
     stack<Sym_table*> table_stack;
+    vector<Symbol*> symTable;
 
     Sym_table_map();
 
-    void begin_sub_scope(int line, int column);
+    void begin_sub_scope(Coordinate *pos);
 
-    void end_sub_scope(int line, int column);
+    void end_sub_scope(Coordinate *pos);
 
-    Symbol* insert_symbol(const string& name, int line, int column);
+    Symbol* insert_symbol(const string& name, Coordinate *pos);
 
-    Symbol* find(const string& name, int line, int column);
+    Symbol* find(const string& name, Coordinate *pos);
+
+    void ShowSymTable();
 };
 #endif //UNTITLED_SYM_TABLE_MAP_H

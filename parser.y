@@ -63,7 +63,7 @@ statement   :  	MAIN LP RP compound_statement { $$ = $4; }
 			|  	expression_statement  	{ $$ = $1; }
 			;
 
-compound_statement 		: 	LB block_item_list RB {$$ = newComStmtNode($2); $$->pos = $1.pos;}
+compound_statement 		: 	LB block_item_list RB {$$ = newComStmtNode($2); $$->pos = $1.pos;$$->attr.val = (void*) $3.pos;}
 		 				;
 
 IO_statement			:	INPUT LP expr RP SEM { $$ = newInputStmtNode($3); $$->pos = $1.pos;}

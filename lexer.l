@@ -324,13 +324,13 @@ STR (\"[^\"]*\")|(\'[^\']\')
     }
 
 {ID} { 
-    yylval.node = newStrConstNode(strdup(yytext));
+    yylval.node = newIdNode(strdup(yytext));
     yylval.node->pos = new Coordinate(lines, columns);
     columns += yyleng;
     return ID;   
     }
 {NUM} { 
-    yylval.node = newStrConstNode(strdup(yytext));
+    yylval.node = newIntConstNode(strdup(yytext));
     yylval.node->pos = new Coordinate(lines, columns);
     columns += yyleng;
     return NUM;

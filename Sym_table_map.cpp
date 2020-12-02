@@ -10,6 +10,11 @@ Coordinate :: Coordinate(Coordinate const &pos) {
     this->column = pos.column;
 }
 
+Coordinate :: Coordinate(Coordinate *pos) {
+    this->line = pos->line;
+    this->column = pos->column;
+}
+
 bool Coordinate :: operator < (const Coordinate& pos){
     if(this->line < pos.line || (this->line == pos.line && this->column < pos.column)){
         return true;
@@ -32,6 +37,7 @@ int Symbol :: reference(){
 
 Sym_table :: Sym_table(Coordinate scope_begin) {
     this->scope_begin = scope_begin;
+    this->scope_end = Coordinate(INT_MAX,INT_MAX);
     symbol_map = new unordered_map<string, Symbol*>;
 }
 
@@ -56,30 +62,34 @@ Sym_table_map :: Sym_table_map() {
     table_stack.push(global_table);
 }
 
-void Sym_table_map :: begin_sub_scope(int line, int column){
-    Sym_table* sub_table = new Sym_table(Coordinate(line,column));
+void Sym_table_map :: begin_sub_scope(Coordinate *pos){
+    Sym_table* sub_table = new Sym_table(*pos);
     table_stack.top()->sub_tables.push_back(sub_table);
     table_stack.push(sub_table);
 }
 
-void Sym_table_map :: end_sub_scope(int line, int column){
+void Sym_table_map :: end_sub_scope(Coordinate *pos){
     if (table_stack.size() == 1){
         return;
     }
-    table_stack.top()->setScopeEnd(Coordinate(line, column));
+    table_stack.top()->setScopeEnd(*pos);
     table_stack.pop();
 }
 
-Symbol* Sym_table_map :: insert_symbol(const string& name, int line, int column){
-    Symbol* symbol = table_stack.top()->insert_symbol(id, name, Coordinate(line,column));
-    if(symbol->id == this->id){
+Symbol* Sym_table_map :: insert_symbol(const string& name, Coordinate *pos){
+    Symbol* symbol = table_stack.top()->insert_symbol(id, name, *pos);
+    if(symbol->pos.line == pos->line && symbol->pos.column == pos->column){
+        symTable.push_back(symbol);
         id++ ;
     }
     return symbol;
 }
 
-Symbol* Sym_table_map :: find(const string& name, int line, int column){
-    Symbol* symbol = global_table->find(name, Coordinate(line, column));
+Symbol* Sym_table_map :: find(const string& name, Coordinate *pos){
+    Symbol* symbol = global_table->find(name, *pos);
+    if(symbol){
+        symbol->reference();
+    }
     return symbol;
 }
 
@@ -99,4 +109,14 @@ Symbol* Sym_table :: find(const string& name, Coordinate pos) {
     }else{
         return symbol;
     }
+}
+
+void Sym_table_map :: ShowSymTable(){
+    for(int i = 0; i < id; i++){
+        cout <<setw(3) << "#" << symTable[i]->id ;
+        cout << setw(12) << "name: " << symTable[i]->name;
+        cout << setw(15) << "reference: "  << symTable[i]->ref;
+        cout << setw(10) << "line:" << symTable[i]->pos.line << setw(10) << "column:" << symTable[i]->pos.column << endl;
+    }
+
 }

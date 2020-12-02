@@ -53,8 +53,69 @@ void ConstructMap() {
 }
 
 void Operate(TreeNode* node) {
-    // BuildSymTable(node, nullptr);
+    BuildSymTable(node, nullptr);
+    cout<< "************************************************ AST 节点 ************************************************\n";
     Display(node);
+    cout<< "\n\n************************************************ 符号表 ************************************************\n";
+    symTables.ShowSymTable();
+}
+
+void BuildSymTable(TreeNode *node, TreeNode *paras){
+    if(!node){
+        return;
+    }
+    if(node->nodekind == DeclK && node->kind.decl == _DeclK){
+        TreeNode *temp = node->childs[1];
+        while (temp){
+            if(temp->nodekind == DeclK && temp->kind.decl == InitK){
+                temp->childs[0]->attr.val = (void*) symTables.insert_symbol(temp->childs[0]->attr.name, temp->childs[0]->pos);
+            }else{
+                temp->attr.val = (void*) symTables.insert_symbol(temp->attr.name, temp->pos);
+            }
+            temp = temp->sibling;
+        }
+        if(node->sibling == nullptr){
+            return;
+        }
+        BuildSymTable(node->sibling, nullptr);
+        return;
+    }
+    if(node->nodekind == ExpK && node->kind.exp == IdK){
+        node->attr.val = (void*) symTables.find(node->attr.name, node->pos);
+        if(node->sibling == nullptr){
+            return;
+        }
+        BuildSymTable(node->sibling, nullptr);
+        return;
+    }
+
+
+    if(node->nodekind == StmtK && node->kind.stmt == CompK){
+        symTables.begin_sub_scope(node->pos);
+        for(int i = 0; i < MAXCHILDREN; i++) {
+            if(node->childs[i] != NULL)
+            {
+                BuildSymTable(node->childs[i], nullptr);
+            }
+        }
+        symTables.end_sub_scope((Coordinate*)node->attr.val);
+        if(node->sibling == nullptr){
+            return;
+        }
+        BuildSymTable(node->sibling, nullptr);
+        return;
+    }
+    for(int i = 0; i < MAXCHILDREN; i++) {
+        if(node->childs[i] != NULL)
+        {
+            BuildSymTable(node->childs[i], nullptr);
+        }
+    }
+    if(node->sibling == nullptr){
+        return;
+    }
+    BuildSymTable(node->sibling, nullptr);
+    return ;
 }
 
 void Display(TreeNode* p){
@@ -119,12 +180,12 @@ void ShowNode(TreeNode *p) {
             detail = "op: " + optMap.at(p->attr.op);
         } else if (p->kind.exp == IdK) {
             type = "ID Declaration";
-            detail = "symbol: " + string(p->attr.name);
+            detail = "symbol: " + ((Symbol*)p->attr.val)->name +"#"+ to_string(((Symbol*)p->attr.val)->id);
         } else if (p->kind.exp == IntConstK) {
-            type = "Const Declaration";
+            type = "IntConst Declaration";
             detail = "value: " + to_string(*((int*)p->attr.val));
         } else if (p->kind.exp == StrConstK) {
-            type = "Const Declaration";
+            type = "StrConst Declaration";
             detail = "value: " + string((char*)p->attr.val);
         }else if (p->kind.exp == TypeK) {
             type = "Type Specifier";
@@ -155,25 +216,32 @@ void ShowNode(TreeNode *p) {
             type = "Var initializer";
             detail = "op: " + optMap.at(p->attr.op);
         }
+        
     } else if (p->nodekind == ProgK){
         type = "Program";
     }
-    
-    cout << p->id << setw(20) << type << setw(20) << detail << setw(20) << child_lineno;
+    cout <<setw(3) << "@" << p->id << setw(22) << type << setw(15) << detail << setw(18) << child_lineno;
     for (int i = 0; i < MAXCHILDREN; ++i) {
         if (p->childs[i] != NULL) {
-            cout << p->childs[i]->id << "   ";
+            cout << "@"<<p->childs[i]->id << "  ";
             TreeNode *temp = p->childs[i];
             while (temp->sibling != NULL) {
-                cout << temp->sibling->id << "   ";
+                cout << "@" <<temp->sibling->id << "  ";
                 temp = temp->sibling;
             }
         }
     }
-    if(p->nodekind == ExpK && p->kind.exp == OpK){
+    if(!p -> pos){
         cout << endl;
+        return;
+    }
+    if(p->nodekind == ExpK && p->kind.exp == OpK){
+        cout<<endl;
+    }else if(p->nodekind == StmtK && p->kind.stmt == CompK){
+        cout << setw(30) << "line:" << p->pos->line << setw(10) << "column:" << p->pos->column;
+        cout << setw(10) << "line:" << ((Coordinate*)p->attr.val)->line << setw(10) << "column:" << ((Coordinate*)p->attr.val)->column << endl;
     }else{
-        cout << setw(20) << "line:" << p->pos->line << setw(20) << "column:" << p->pos->column << endl;
+        cout << setw(30) << "line:" << p->pos->line << setw(10) << "column:" << p->pos->column << endl;
     }
 }
 
@@ -181,6 +249,7 @@ TreeNode* newProgramNode(TreeNode* program){
     TreeNode* node = newTreeNode(ProgK, 0);
     node ->childs [0] = program;
     return node;
+
 }
 
 int str2int(string num){
