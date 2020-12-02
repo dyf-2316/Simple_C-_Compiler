@@ -51,7 +51,7 @@ block_item_list   		:  block_item block_item_list {
         				|  block_item { $$ = $1; }
 						;
 
-block_item				:	declaration										{ $$ = $1; }
+block_item				:	declaration	SEM									{ $$ = $1; }
 						| 	statement										{ $$ = $1; }
 						;
 
@@ -88,7 +88,7 @@ iteration_statement		:  	FOR LP expression SEM expression SEM expression RP stat
 
 expression_statement	:	expression SEM									{ $$ = $1;}
 
-expression				:	expr COM expression 							{ $1 -> sibling = $3; $$ = $1;}
+expression				:	expr COM expression 							{ $1 -> sibling = $3; $$ = $1;ShowNode($$);}
 						|	expr											{ $$ = $1;}
 						| 													{ $$ = NULL;}
 						;
@@ -118,7 +118,7 @@ expr					:	expr ADD expr									{ $$ = newExpNode($2.op, $1, $3); }
 						|   ID              								{ $$ = $1; }
 						;
 
-declaration    			:   declaration_specifier init_declarator_list SEM		{ $$ = newDeclNode($1, $2); $$->pos = $1->pos;}
+declaration    			:   declaration_specifier init_declarator_list 		{ $$ = newDeclNode($1, $2); $$->pos = $1->pos;}
 			   			;
 
 declaration_specifier   :	type_specifiers const_specifiers				{ $$ = newDeclSpecNode($1, $2); $$->pos = $1->pos;}

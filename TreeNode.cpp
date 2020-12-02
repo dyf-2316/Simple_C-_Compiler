@@ -64,6 +64,17 @@ void BuildSymTable(TreeNode *node, TreeNode *paras){
     if(!node){
         return;
     }
+    if(node->nodekind == StmtK && node->kind.stmt == ForK && node->childs[0] && node->childs[0]->nodekind == DeclK){
+        TreeNode *temp = node->childs[0];
+        BuildSymTable(node->childs[3], temp);
+        if(node->childs[1])BuildSymTable(node->childs[1],nullptr);
+        if(node->childs[2])BuildSymTable(node->childs[2],nullptr);
+        if(node->sibling == nullptr){
+            return;
+        }
+        BuildSymTable(node->sibling, nullptr);
+        return;
+    }
     if(node->nodekind == DeclK && node->kind.decl == _DeclK){
         TreeNode *temp = node->childs[1];
         while (temp){
@@ -92,6 +103,7 @@ void BuildSymTable(TreeNode *node, TreeNode *paras){
 
     if(node->nodekind == StmtK && node->kind.stmt == CompK){
         symTables.begin_sub_scope(node->pos);
+        BuildSymTable(paras,nullptr);
         for(int i = 0; i < MAXCHILDREN; i++) {
             if(node->childs[i] != NULL)
             {
