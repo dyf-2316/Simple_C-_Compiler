@@ -53,26 +53,27 @@ void ConstructMap() {
 }
 
 void Operate(TreeNode* node) {
-    BuildSymTable(node, nullptr);
+    BuildSymTable(node);
     cout<< "************************************************ AST 节点 ************************************************\n";
     Display(node);
     cout<< "\n\n************************************************ 符号表 ************************************************\n";
     symTables.ShowSymTable();
 }
 
-void BuildSymTable(TreeNode *node, TreeNode *paras){
+void BuildSymTable(TreeNode *node, bool noParas){
     if(!node){
         return;
     }
     if(node->nodekind == StmtK && node->kind.stmt == ForK && node->childs[0] && node->childs[0]->nodekind == DeclK){
-        TreeNode *temp = node->childs[0];
-        BuildSymTable(node->childs[3], temp);
-        if(node->childs[1])BuildSymTable(node->childs[1],nullptr);
-        if(node->childs[2])BuildSymTable(node->childs[2],nullptr);
+        symTables.begin_sub_scope(node->pos);
+        if(node->childs[0])BuildSymTable(node->childs[0], true);
+        if(node->childs[1])BuildSymTable(node->childs[1], true);
+        if(node->childs[2])BuildSymTable(node->childs[2], true);
+        BuildSymTable(node->childs[3], false);
         if(node->sibling == nullptr){
             return;
         }
-        BuildSymTable(node->sibling, nullptr);
+        BuildSymTable(node->sibling, true);
         return;
     }
     if(node->nodekind == DeclK && node->kind.decl == _DeclK){
@@ -88,7 +89,7 @@ void BuildSymTable(TreeNode *node, TreeNode *paras){
         if(node->sibling == nullptr){
             return;
         }
-        BuildSymTable(node->sibling, nullptr);
+        BuildSymTable(node->sibling, true);
         return;
     }
     if(node->nodekind == ExpK && node->kind.exp == IdK){
@@ -96,37 +97,38 @@ void BuildSymTable(TreeNode *node, TreeNode *paras){
         if(node->sibling == nullptr){
             return;
         }
-        BuildSymTable(node->sibling, nullptr);
+        BuildSymTable(node->sibling, true);
         return;
     }
 
 
     if(node->nodekind == StmtK && node->kind.stmt == CompK){
-        symTables.begin_sub_scope(node->pos);
-        BuildSymTable(paras,nullptr);
+        if(noParas){
+            symTables.begin_sub_scope(node->pos);
+        }
         for(int i = 0; i < MAXCHILDREN; i++) {
             if(node->childs[i] != NULL)
             {
-                BuildSymTable(node->childs[i], nullptr);
+                BuildSymTable(node->childs[i], true);
             }
         }
         symTables.end_sub_scope((Coordinate*)node->attr.val);
         if(node->sibling == nullptr){
             return;
         }
-        BuildSymTable(node->sibling, nullptr);
+        BuildSymTable(node->sibling, true);
         return;
     }
     for(int i = 0; i < MAXCHILDREN; i++) {
         if(node->childs[i] != NULL)
         {
-            BuildSymTable(node->childs[i], nullptr);
+            BuildSymTable(node->childs[i], true);
         }
     }
     if(node->sibling == nullptr){
         return;
     }
-    BuildSymTable(node->sibling, nullptr);
+    BuildSymTable(node->sibling, true);
     return ;
 }
 
