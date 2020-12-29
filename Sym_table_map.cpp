@@ -27,7 +27,8 @@ Symbol :: Symbol(int id, const string &name, const Coordinate& pos){
     this->id = id;
     this->name.assign(name);
     this->pos = Coordinate(pos);
-    this->value = 0;
+    this->label = "";
+    this->type = 0;
     this->ref = 0;
 }
 
@@ -79,10 +80,11 @@ void Sym_table_map :: end_sub_scope(Coordinate *pos){
 Symbol* Sym_table_map :: insert_symbol(const string& name, Coordinate *pos){
     Symbol* symbol = table_stack.top()->insert_symbol(id, name, *pos);
     if(symbol->pos.line == pos->line && symbol->pos.column == pos->column){
-        symTable.push_back(symbol);
+        sym_table.push_back(symbol);
         id++ ;
+        return symbol;
     }
-    return symbol;
+    return nullptr;
 }
 
 Symbol* Sym_table_map :: find(const string& name, Coordinate *pos){
@@ -113,10 +115,17 @@ Symbol* Sym_table :: find(const string& name, Coordinate pos) {
 
 void Sym_table_map :: ShowSymTable(){
     for(int i = 0; i < id; i++){
-        cout <<setw(3) << "#" << symTable[i]->id ;
-        cout << setw(12) << "name: " << symTable[i]->name;
-        cout << setw(15) << "reference: "  << symTable[i]->ref;
-        cout << setw(10) << "line:" << symTable[i]->pos.line << setw(10) << "column:" << symTable[i]->pos.column << endl;
+        cout <<setw(3) << "#" << sym_table[i]->id ;
+        cout << setw(12) << "name: " << sym_table[i]->name;
+        cout << setw(12) << "type: " << sym_table[i]->type;
+        if (sym_table[i]->type == 1){
+            cout << setw(12) << "value: " << sym_table[i]->value.Int;
+        } else
+        {
+            cout << setw(12) << "value: " << sym_table[i]->value.Char;
+        }
+        cout << setw(15) << "reference: "  << sym_table[i]->ref;
+        cout << setw(10) << "line:" << sym_table[i]->pos.line << setw(10) << "column:" << sym_table[i]->pos.column << endl;
     }
 
 }

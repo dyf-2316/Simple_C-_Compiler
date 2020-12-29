@@ -42,8 +42,8 @@ DMIN \-\-
 
 ASSIGN =
 
-INPUT input 
-OUTPUT output 
+INPUT scanf
+OUTPUT printf
 
 MAIN main
 

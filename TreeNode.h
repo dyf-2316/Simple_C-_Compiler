@@ -19,6 +19,15 @@ typedef enum {Void,Integer,Char,Boolean} DeclType;
 typedef enum {Add, Min, Mul, Div, Mod, Dadd, Dmin, Assign,
     Equ, Gtr, Lss, Geq, Leq, Neq, Logical_and, Logical_or, Logical_not} OpType;
 extern unordered_map<int, string> optMap;
+extern int temp_var_seq;
+struct Label {
+    int true_label;
+    int false_label;
+    int begin_label;
+    int end_label;
+    int next_label;
+    int data_label;
+};
 class TreeNode {
 public:
     int id;
@@ -32,20 +41,28 @@ public:
         void* val; // 常量
         char* name; // id名字
     }attr;
+    int temp_var;
+    Label label;
     DeclType type; // 用于类型检查：此节点的类
     TreeNode(NodeKind nodekind, int kind);
 };
 
-void Operate(TreeNode* p);
+extern vector<TreeNode*> rodataNodes;
+
+void erroring(string str, Coordinate pos);
+void check_type(TreeNode *node);
+void get_temp_var(TreeNode *node);
+void recursive(TreeNode *node);
+
 void Display(TreeNode* p);
 void ShowNode(TreeNode* p);
 
 void ConstructMap();
 void BuildSymTable(TreeNode *node, bool noParas = true);
 
-TreeNode* newProgramNode(TreeNode* program);
-
 TreeNode* newTreeNode(NodeKind nodekind, int kind);
+
+TreeNode* newProgramNode(TreeNode* program);
 TreeNode* newIntConstNode(char* num);
 TreeNode* newStrConstNode(char* str);
 TreeNode* newOpNode(OpType op);

@@ -1,13 +1,13 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
-#include "TreeNode.h"
+#include "code.h"
 void yyerror(const char* msg) {}
 int yylex();
 %}
 %union{
   TreeNode* node;
-  union {OpType op; Coordinate* pos;} detail;
+  struct {OpType op; Coordinate* pos;} detail;
 };
 
 %token <node> NUM ID STR
@@ -38,7 +38,7 @@ int yylex();
 %left  DADD DMIN 
 %%
 
-program 				:  block_item_list       							{ $$ = newProgramNode($1);$$->pos = $1->pos ; Operate($$); }
+program 				:  block_item_list       							{ $$ = newProgramNode($1);$$->pos = $1->pos ; genCode($$); }
 
 block_item_list   		:  block_item block_item_list {
 							if($$ == NULL) {
@@ -93,25 +93,25 @@ expression				:	expr COM expression 							{ $1 -> sibling = $3; $$ = $1;ShowNod
 						| 													{ $$ = NULL;}
 						;
 
-expr					:	expr ADD expr									{ $$ = newExpNode($2.op, $1, $3); }
-						|	expr MIN expr									{ $$ = newExpNode($2.op, $1, $3); }
-						|	expr MUL expr									{ $$ = newExpNode($2.op, $1, $3); }
-						|	expr DIV expr									{ $$ = newExpNode($2.op, $1, $3); }
-        				| 	expr MOD expr									{ $$ = newExpNode($2.op, $1, $3); }
-        				|   expr DMIN       								{ $$ = newExpNode($2.op, $1, NULL); }
-        				|   expr DADD       								{ $$ = newExpNode($2.op, $1, NULL); }
-        				|   expr ASSIGN expr   								{ $$ = newExpNode($2.op, $1, $3); }
-        				|   expr EQU expr   								{ $$ = newExpNode($2.op, $1, $3); }
-        				|   expr GTR expr   								{ $$ = newExpNode($2.op, $1, $3); }
-        				|   expr LSS expr   								{ $$ = newExpNode($2.op, $1, $3); }
-        				|   expr GEQ expr   								{ $$ = newExpNode($2.op, $1, $3); }
-        				|   expr LEQ expr   								{ $$ = newExpNode($2.op, $1, $3); }
-        				|   expr NEQ expr   								{ $$ = newExpNode($2.op, $1, $3); }
-        				|   expr LOGICAL_AND expr  							{ $$ = newExpNode($2.op, $1, $3); }
-        				|   expr LOGICAL_OR expr   							{ $$ = newExpNode($2.op, $1, $3); }
-        				|   LOGICAL_NOT expr   								{ $$ = newExpNode($1.op, $2, NULL); }
-        				|   MIN expr %prec UMIN   							{ $$ = newExpNode($1.op, $2, NULL); }
-        				|   ADD expr %prec UADD   							{ $$ = newExpNode($1.op, $2, NULL); }
+expr					:	expr ADD expr									{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.pos;}
+						|	expr MIN expr									{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.pos;}
+						|	expr MUL expr									{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.pos;}
+						|	expr DIV expr									{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.pos;}
+        				| 	expr MOD expr									{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.pos;}
+        				|   expr DMIN       								{ $$ = newExpNode($2.op, $1, NULL); $$->pos = $2.pos;}
+        				|   expr DADD       								{ $$ = newExpNode($2.op, $1, NULL); $$->pos = $2.pos;$$->pos = $2.pos;}
+        				|   expr ASSIGN expr   								{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.pos;}
+        				|   expr EQU expr   								{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.pos;}
+        				|   expr GTR expr   								{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.pos;}
+        				|   expr LSS expr   								{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.pos;}
+        				|   expr GEQ expr   								{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.pos;}
+        				|   expr LEQ expr   								{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.pos;}
+        				|   expr NEQ expr   								{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.pos;}
+        				|   expr LOGICAL_AND expr  							{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.pos;}
+        				|   expr LOGICAL_OR expr   							{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.pos;}
+        				|   LOGICAL_NOT expr   								{ $$ = newExpNode($1.op, $2, NULL); $$->pos = $1.pos;}
+        				|   MIN expr %prec UMIN   							{ $$ = newExpNode($1.op, $2, NULL); $$->pos = $1.pos;}
+        				|   ADD expr %prec UADD   							{ $$ = newExpNode($1.op, $2, NULL); $$->pos = $1.pos;}
 						|	LP expr RP	    								{ $$ = $2; }
 						|	NUM             								{ $$ = $1; }   // $$=$1 can be ignored
         				|   STR             								{ $$ = $1; }

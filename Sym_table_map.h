@@ -11,8 +11,6 @@
 #include <stack>
 #include <string>
 
-typedef enum {ValK, FunK, ArrK, StrK} SymKind;
-
 using  namespace std;
 
 class Coordinate{
@@ -37,8 +35,13 @@ public:
     int id;
     string name;
     Coordinate pos;
-    int value;
+    union {
+        int Int; 
+        char* Char; 
+    }value;
+    string label;
     int ref;
+    int type;
 
     Symbol(int id, const string &name, const Coordinate& pos);
 
@@ -68,7 +71,7 @@ class Sym_table_map{
 public:
     Sym_table* global_table;
     stack<Sym_table*> table_stack;
-    vector<Symbol*> symTable;
+    vector<Symbol*> sym_table;
 
     Sym_table_map();
 

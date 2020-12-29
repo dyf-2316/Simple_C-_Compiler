@@ -1,7 +1,17 @@
 #include "TreeNode.h"
 int nodes = 0;
+int temp_var_seq = 0;
 unordered_map<int, string> optMap;
-Sym_table_map symTables;
+
+
+// TODO: char 类型变量声明
+// TODO: 代码结构重构
+
+vector<TreeNode*> rodataNodes;
+
+void erroring(string str, Coordinate pos){
+    cout << "ERROR " << pos.line << '_' << pos.column << " : " << str << endl;
+}
 
 TreeNode * newTreeNode(NodeKind nodekind, int kind) {
     TreeNode * t = new TreeNode(NodeKind(nodekind), kind);
@@ -52,84 +62,80 @@ void ConstructMap() {
     
 }
 
-void Operate(TreeNode* node) {
-    BuildSymTable(node);
-    cout<< "************************************************ AST 节点 ************************************************\n";
-    Display(node);
-    cout<< "\n\n************************************************ 符号表 ************************************************\n";
-    symTables.ShowSymTable();
-}
-
-void BuildSymTable(TreeNode *node, bool noParas){
-    if(!node){
-        return;
-    }
-    if(node->nodekind == StmtK && node->kind.stmt == ForK && node->childs[0] && node->childs[0]->nodekind == DeclK){
-        symTables.begin_sub_scope(node->pos);
-        if(node->childs[0])BuildSymTable(node->childs[0], true);
-        if(node->childs[1])BuildSymTable(node->childs[1], true);
-        if(node->childs[2])BuildSymTable(node->childs[2], true);
-        BuildSymTable(node->childs[3], false);
-        if(node->sibling == nullptr){
-            return;
-        }
-        BuildSymTable(node->sibling, true);
-        return;
-    }
-    if(node->nodekind == DeclK && node->kind.decl == _DeclK){
-        TreeNode *temp = node->childs[1];
-        while (temp){
-            if(temp->nodekind == DeclK && temp->kind.decl == InitK){
-                temp->childs[0]->attr.val = (void*) symTables.insert_symbol(temp->childs[0]->attr.name, temp->childs[0]->pos);
-            }else{
-                temp->attr.val = (void*) symTables.insert_symbol(temp->attr.name, temp->pos);
-            }
-            temp = temp->sibling;
-        }
-        if(node->sibling == nullptr){
-            return;
-        }
-        BuildSymTable(node->sibling, true);
-        return;
-    }
-    if(node->nodekind == ExpK && node->kind.exp == IdK){
-        node->attr.val = (void*) symTables.find(node->attr.name, node->pos);
-        if(node->sibling == nullptr){
-            return;
-        }
-        BuildSymTable(node->sibling, true);
-        return;
-    }
-
-
-    if(node->nodekind == StmtK && node->kind.stmt == CompK){
-        if(noParas){
-            symTables.begin_sub_scope(node->pos);
-        }
-        for(int i = 0; i < MAXCHILDREN; i++) {
-            if(node->childs[i] != NULL)
-            {
-                BuildSymTable(node->childs[i], true);
-            }
-        }
-        symTables.end_sub_scope((Coordinate*)node->attr.val);
-        if(node->sibling == nullptr){
-            return;
-        }
-        BuildSymTable(node->sibling, true);
-        return;
-    }
+void recursive(TreeNode *node) {
+    TreeNode *temp;
+    int i = 0;
     for(int i = 0; i < MAXCHILDREN; i++) {
         if(node->childs[i] != NULL)
         {
-            BuildSymTable(node->childs[i], true);
+            recursive(node->childs[i]);
         }
     }
-    if(node->sibling == nullptr){
+    check_type(node);
+    temp = node->sibling;
+    if(temp != NULL) {
+        recursive(temp);
+    }
+    return;
+}
+
+void check_type(TreeNode *node) {
+    get_temp_var(node);
+    if (node->nodekind == StmtK || node->nodekind == DeclK || node->nodekind == ProgK){
+        node->type = Void;
+    } else if (node->nodekind == ExpK){
+        if (node->kind.exp == OpK){
+            if (node->attr.op == Logical_not || node->attr.op == Logical_and || node->attr.op == Logical_or){
+                node->type = Boolean;
+            }
+            else if (node->attr.op == Equ || node->attr.op == Gtr || node->attr.op == Lss || node->attr.op == Geq || node->attr.op == Leq || node->attr.op == Neq) {
+                node->type = Boolean;
+            }
+            else{
+                if (!node->childs[1] || (node->childs[1] && node->childs[0]->type == node->childs[1]->type)){
+                    node->type = node->childs[0]->type;
+                }else{
+                    erroring("运算数类型不相同", node->pos);
+                    node->type = Integer;
+                }
+            } 
+        }
+    }
+    return;
+}
+
+// 在.data区域里写临时变量！
+void get_temp_var(TreeNode *node) { // TODO: temp_var这点搞清楚！！！ 
+    if (node->nodekind != ExpK || node->kind.exp != OpK)
+        return;
+    if (node->attr.op == Logical_and || node->attr.op == Logical_or || node->attr.op == Logical_not)
+    {
         return;
     }
-    BuildSymTable(node->sibling, true);
-    return ;
+    TreeNode *arg1 = node->childs[0];
+    TreeNode *arg2 = node->childs[1];
+    if (arg1->kind.exp == OpK) {
+        temp_var_seq--;
+    }
+    if (arg2 && arg2->kind.exp == OpK) {
+        temp_var_seq--;
+    }
+    node->temp_var = temp_var_seq;
+    switch (node->attr.op){
+        case Assign:
+        case Equ:
+        case Gtr:
+        case Lss:
+        case Geq:
+        case Leq:
+        case Neq:
+            return;
+        case Add:
+            break;
+        default:
+            break;
+    }
+    temp_var_seq++;
 }
 
 void Display(TreeNode* p){
@@ -152,7 +158,6 @@ void ShowNode(TreeNode *p) {
     string detail = "";
     string child_lineno = "Children: ";
     if (p->nodekind == StmtK) {
-
         switch (p->kind.stmt) //IfK, WhileK, AssignK, ForK, CompK, InputK, PrintK
         {
             case IfK:
@@ -197,7 +202,7 @@ void ShowNode(TreeNode *p) {
             if((Symbol*)p->attr.val){
                 detail = "symbol: " + ((Symbol*)p->attr.val)->name +" #"+ to_string(((Symbol*)p->attr.val)->id);
             }else{
-                detail = "未声明";
+                detail = "未声明或重复定义";
             }
         } else if (p->kind.exp == IntConstK) {
             type = "IntConst Declaration";
@@ -248,7 +253,25 @@ void ShowNode(TreeNode *p) {
     } else if (p->nodekind == ProgK){
         type = "Program";
     }
-    cout <<setw(3) << "@" << p->id << setw(22) << type << setw(15) << detail << setw(18) << child_lineno;
+    cout << setw(3) << "@" << p->id << setw(22) << type << setw(15) << detail;
+    // switch (p->type) {
+    //     case Void:
+    //         cout << setw(10) << "type: "<< "void";
+    //         break;
+    //     case Char:
+    //         cout << setw(10) << "type: "<< "char";
+    //         break;
+    //     case Integer:
+    //         cout << setw(10) << "type: "<< "integer";
+    //         break;
+    //     case Boolean:
+    //         cout << setw(10) << "type: "<< "boolean";
+    //         break;
+    //     default:
+    //         break;
+    // }
+    cout << setw(13) << "temp_val: " << p->temp_var;
+    cout << setw(18) << child_lineno;
     for (int i = 0; i < MAXCHILDREN; ++i) {
         if (p->childs[i] != NULL) {
             cout << "@"<<p->childs[i]->id << "  ";
@@ -266,10 +289,10 @@ void ShowNode(TreeNode *p) {
     if(p->nodekind == ExpK && p->kind.exp == OpK){
         cout<<endl;
     }else if(p->nodekind == StmtK && p->kind.stmt == CompK){
-        cout << setw(30) << "line:" << p->pos->line << setw(10) << "column:" << p->pos->column;
+        cout << setw(20) << "line:" << p->pos->line << setw(10) << "column:" << p->pos->column;
         cout << setw(10) << "line:" << ((Coordinate*)p->attr.val)->line << setw(10) << "column:" << ((Coordinate*)p->attr.val)->column << endl;
     }else{
-        cout << setw(30) << "line:" << p->pos->line << setw(10) << "column:" << p->pos->column << endl;
+        cout << setw(20) << "line:" << p->pos->line << setw(10) << "column:" << p->pos->column << endl;
     }
 }
 
@@ -327,12 +350,15 @@ TreeNode* newIntConstNode(char* num){
     int* temp = new int[1];
     *temp = val;
     node->attr.val = (void*)temp;
+    node->type = Integer;
     return node;
 }
 
 TreeNode* newStrConstNode(char* str){
     TreeNode* node = newTreeNode(ExpK, StrConstK);
     node->attr.val = (void*)str;
+    rodataNodes.push_back(node);
+    node->type = Char;
     return node;
 }
 
@@ -393,7 +419,6 @@ TreeNode * newDeclNode(TreeNode* type, TreeNode *idlist) {
     node->childs[0] = type;
     node->childs[1] = idlist;
     node->type = type->type;
-    // 符号表在语法树建好后自顶向下构建
     return node;
 }
 
