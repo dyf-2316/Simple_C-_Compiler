@@ -12,14 +12,13 @@ int yylex();
 
 %token <node> NUM ID STR
 %token <node> INT CHAR BOOLEAN VOID 
-%token <detail> ADD MIN MUL DIV MOD DADD DMIN ASSIGN EQU 
+%token <detail> ADD MIN MUL DIV MOD DADD DMIN ASSIGN EQU ADR
 %token <detail> GTR LSS GEQ LEQ NEQ LOGICAL_AND LOGICAL_OR LOGICAL_NOT UMIN UADD
 %token <detail> SEM LB RB COM LP RP LBK RBK
 %token <detail> FOR INPUT OUTPUT ELSE DO MAIN IF WHILE RETURN
 %token <node> CONST
 
 %type <node> expression expr 
-%type <node> if_stmt else_stmt
 %type <node> type_specifiers declaration init_declarator_list init_declarator declarator initializer const_specifiers declaration_specifier
 %type <node> statement compound_statement iteration_statement selection_statement IO_statement expression_statement
 %type <node> block_item_list block_item
@@ -35,7 +34,6 @@ int yylex();
 %left MUL DIV MOD
 %right LOGICAL_NOT
 %right UMIN UADD
-%left  DADD DMIN 
 %%
 
 program 				:  block_item_list       							{ $$ = newProgramNode($1);$$->pos = $1->pos ; genCode($$); }
@@ -55,35 +53,30 @@ block_item				:	declaration	SEM									{ $$ = $1; }
 						| 	statement										{ $$ = $1; }
 						;
 
-statement   			:  	MAIN LP RP compound_statement 					{ $$ = $4; }
+statement   			:  	INT MAIN LP RP compound_statement 				{ $$ = $5; }
 						|  	compound_statement        						{ $$ = $1; }
 						|  	IO_statement    								{ $$ = $1; }
 						|	selection_statement								{ $$ = $1; }
 						|  	iteration_statement								{ $$ = $1; }
+						|	RETURN NUM SEM									{ $$ = NULL;}
 						|  	expression_statement  							{ $$ = $1; }
 						;
 
 compound_statement 		: 	LB block_item_list RB 							{$$ = newComStmtNode($2); $$->pos = $1.pos;$$->attr.val = (void*) $3.pos;}
 		 				;
 
-IO_statement			:	INPUT LP expr RP SEM 							{ $$ = newInputStmtNode($3); $$->pos = $1.pos;}
-						|	OUTPUT LP expr RP SEM							{ $$ = newOutputStmtNode($3); $$->pos = $1.pos;}
+IO_statement			:	INPUT LP expr COM ADR ID RP SEM 				{ $$ = newInputStmtNode($3, $6); $$->pos = $1.pos; cout << "ha\n";}
+						|	OUTPUT LP expr COM expr RP SEM					{ $$ = newOutputStmtNode($3, $5); $$->pos = $1.pos;}
+						|	OUTPUT LP expr RP SEM							{ $$ = newOutputStmtNode($3, NULL); $$->pos = $1.pos;}
 						;
 
-if_stmt 				:   IF LP expr RP statement  						{ $$ = newIfStmtNode($3, $5); $$->pos = $1.pos;}
+selection_statement		:   IF LP expr RP statement               			{ $$ = newSelectiveStmtNode($3, $5, NULL); }
+						|   IF LP expr RP statement ELSE statement    		{ $$ = newSelectiveStmtNode($3, $5, $7); }
 						;
-
-else_stmt     			:  ELSE statement 									{ $$ = newElseStmtNode($2); $$->pos = $1.pos;} 
-              			; 
-
-selection_statement		:  	if_stmt else_stmt 								{ $$ = newIfElseStmtNode($1, $2); $$->pos = $1->pos;}
-						|  	if_stmt         								{ $$ = $1; }
-						;	
 
 iteration_statement		:  	FOR LP expression SEM expression SEM expression RP statement 	{ $$ = newForStmtNode($3, $5, $7, $9);$$->pos = $1.pos;}
 						|  	FOR LP declaration SEM expression SEM expression RP statement 	{ $$ = newForStmtNode($3, $5, $7, $9);$$->pos = $1.pos;}
-						|	WHILE LP expression RP statement 								{ $$ = newWhileStmtNode(WhileK, $3, $5); $$->pos = $1.pos;}
-						|	DO compound_statement WHILE LP expression RP SEM 				{ $$ = newWhileStmtNode(DoWhileK, $2, $5); $$->pos = $1.pos;}
+						|	WHILE LP expression RP statement 								{ $$ = newWhileStmtNode($3, $5); $$->pos = $1.pos;}
 		   				;
 
 expression_statement	:	expression SEM									{ $$ = $1;}
@@ -98,8 +91,6 @@ expr					:	expr ADD expr									{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.
 						|	expr MUL expr									{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.pos;}
 						|	expr DIV expr									{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.pos;}
         				| 	expr MOD expr									{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.pos;}
-        				|   expr DMIN       								{ $$ = newExpNode($2.op, $1, NULL); $$->pos = $2.pos;}
-        				|   expr DADD       								{ $$ = newExpNode($2.op, $1, NULL); $$->pos = $2.pos;$$->pos = $2.pos;}
         				|   expr ASSIGN expr   								{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.pos;}
         				|   expr EQU expr   								{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.pos;}
         				|   expr GTR expr   								{ $$ = newExpNode($2.op, $1, $3); $$->pos = $2.pos;}

@@ -24,16 +24,15 @@ void recursive_get_label(TreeNode *t, int next_label) {
 
 void stmt_get_label(TreeNode *node, int next_label) {
     switch (node->kind.stmt) {
-        case CompK: {
+        case CompK:
             TreeNode *stmt = node->childs[0];
             stmt->label.begin_label = node->label.begin_label;
             for ( ; stmt; stmt = stmt->sibling)
             {
                 recursive_get_label(stmt, next_label);
             }
-        }
             break;
-        case WhileK: {
+        case WhileK:
             TreeNode *expr = node->childs[0];
             TreeNode *stmt = node->childs[1];
             if (node->label.begin_label == 0) {
@@ -51,10 +50,9 @@ void stmt_get_label(TreeNode *node, int next_label) {
             }
             recursive_get_label(expr, 0);
             recursive_get_label(stmt, node->label.begin_label);
-        }
             break;
 
-        case IfK: {
+        case IfK: 
             TreeNode *expr = node->childs[0];
             TreeNode *stmt = node->childs[1];
             TreeNode *else_stmt = node->childs[2];
@@ -75,8 +73,8 @@ void stmt_get_label(TreeNode *node, int next_label) {
             recursive_get_label(expr, 0);
             recursive_get_label(stmt, node->label.next_label);
             recursive_get_label(else_stmt, node->label.next_label);
-        }
             break;
+            
         default:
             break;
     }

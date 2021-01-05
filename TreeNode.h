@@ -11,15 +11,16 @@ using namespace std;
 
 
 typedef enum {StmtK, ExpK, DeclK, ProgK} NodeKind;
-typedef enum {IfK, IfElseK, ElseK, WhileK, DoWhileK, AssignK, ForK, CompK, InputK, PrintK} StmtKind;
-typedef enum {OpK,IntConstK,StrConstK,IdK,TypeK} ExpKind;
+typedef enum {IfK, WhileK, DoWhileK, AssignK, ForK, CompK, InputK, PrintK} StmtKind;
+typedef enum {OpK,IntConstK,StrConstK,CharConstK,IdK,TypeK} ExpKind;
 typedef enum {_DeclK, InitK, ConstK, SpecK} DeclKind;
 typedef enum {Void,Integer,Char,Boolean} DeclType;
 
 typedef enum {Add, Min, Mul, Div, Mod, Dadd, Dmin, Assign,
     Equ, Gtr, Lss, Geq, Leq, Neq, Logical_and, Logical_or, Logical_not} OpType;
 extern unordered_map<int, string> optMap;
-extern int temp_var_seq;
+extern int max_temp_var_seq;
+extern Sym_table_map symTables;
 struct Label {
     int true_label;
     int false_label;
@@ -79,10 +80,8 @@ TreeNode* newDeclNode(TreeNode* type, TreeNode *idlist);
 TreeNode* newInitNode(TreeNode* id, TreeNode* init);
 TreeNode* newDeclSpecNode(TreeNode *spec1, TreeNode *spec2);
 
-TreeNode* newWhileStmtNode(int kind, TreeNode* expr, TreeNode* stmt);
-TreeNode* newIfStmtNode(TreeNode *expr, TreeNode *stmt);
-TreeNode* newElseStmtNode(TreeNode *stmt);
-TreeNode* newIfElseStmtNode(TreeNode *If, TreeNode * Else);
-TreeNode* newInputStmtNode(TreeNode *opd);
-TreeNode* newOutputStmtNode(TreeNode *opd);
+TreeNode* newWhileStmtNode(TreeNode* expr, TreeNode* stmt);
+TreeNode* newSelectiveStmtNode(TreeNode *expr, TreeNode * if_stmt, TreeNode * else_stmt);
+TreeNode* newInputStmtNode(TreeNode *str, TreeNode *id);
+TreeNode* newOutputStmtNode(TreeNode *str, TreeNode *val);
 TreeNode* newComStmtNode(TreeNode *stmts);

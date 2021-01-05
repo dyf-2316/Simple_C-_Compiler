@@ -54,6 +54,8 @@ GEQ \>=
 LEQ \<=
 NEQ !=
 
+ADR \&
+
 LB \{    
 RB \}
 LP \(
@@ -75,7 +77,7 @@ T [\t]+
 
 ID [A-Za-z_][A-Za-z0-9_]*
 
-STR (\"[^\"]*\")|(\'[^\']\')
+STR (\"[^\"]*\")|(\'[^\']*\')
 
 
 
@@ -145,6 +147,11 @@ STR (\"[^\"]*\")|(\'[^\']\')
     yylval.node->pos = new Coordinate(lines, columns);
     columns += yyleng;
     return CHAR;
+    }
+{ADR} { 
+    yylval.detail.pos = new Coordinate(lines, columns);
+    columns += yyleng;
+    return ADR; 
     }
 {BOOLEAN} { 
     yylval.node = newTypeNode(Boolean);

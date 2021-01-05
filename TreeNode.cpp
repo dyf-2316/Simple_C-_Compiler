@@ -1,7 +1,10 @@
 #include "TreeNode.h"
 int nodes = 0;
 int temp_var_seq = 0;
+int max_temp_var_seq = 0;
 unordered_map<int, string> optMap;
+
+Sym_table_map symTables;
 
 
 // TODO: char 类型变量声明
@@ -121,6 +124,7 @@ void get_temp_var(TreeNode *node) { // TODO: temp_var这点搞清楚！！！
         temp_var_seq--;
     }
     node->temp_var = temp_var_seq;
+    max_temp_var_seq = max(temp_var_seq, max_temp_var_seq);
     switch (node->attr.op){
         case Assign:
         case Equ:
@@ -153,6 +157,126 @@ void Display(TreeNode* p){
     }
 }
 
+void BuildSymTable(TreeNode *node, bool noParas){
+    if(!node){
+        return;
+    }
+    if(node->nodekind == StmtK && node->kind.stmt == ForK && node->childs[0] && node->childs[0]->nodekind == DeclK){
+        symTables.begin_sub_scope(node->pos);
+        if(node->childs[0])BuildSymTable(node->childs[0], true);
+        if(node->childs[1])BuildSymTable(node->childs[1], true);
+        if(node->childs[2])BuildSymTable(node->childs[2], true);
+        BuildSymTable(node->childs[3], false);
+        if(node->sibling == nullptr){
+            return;
+        }
+        BuildSymTable(node->sibling, true);
+        return;
+    }
+
+    if(node->nodekind == DeclK && node->kind.decl == _DeclK){
+        TreeNode *temp = node->childs[1];
+        while (temp){
+            if(temp->nodekind == DeclK && temp->kind.decl == InitK){
+                Symbol *sym = symTables.insert_symbol(temp->childs[0]->attr.name, temp->childs[0]->pos);
+                if(sym){
+                    if (temp->childs[1]->nodekind == ExpK && (temp->childs[1]->kind.exp == IntConstK || temp->childs[1]->kind.exp == CharConstK)){
+                        sym->value.Int = *(int*)temp->childs[1]->attr.val;
+                    }else if (temp->childs[1]->nodekind == ExpK && temp->childs[1]->kind.exp == StrConstK )
+                    {
+                        sym->value.Char = (char*)temp->childs[1]->attr.val;
+                    }
+                    if (node->childs[0]->childs[0]){
+                        if(node->childs[0]->childs[0]->nodekind == ExpK){
+                            sym->type = node->childs[0]->childs[0]->type;
+                            temp->childs[0]->type = node->childs[0]->childs[0]->type;
+                        }else{
+                            sym->type = node->childs[0]->childs[1]->type;
+                            temp->childs[0]->type = node->childs[0]->childs[0]->type;
+                        }
+                    }
+                    sym->label = (sym->name + '_' + to_string(sym->id)).c_str();;
+                    temp->childs[0]->attr.val = (void*) sym;
+                } else{
+                    erroring("变量重复定义", temp->childs[0]->pos);
+                    temp->childs[0]->attr.val = nullptr;
+                }
+            }else{
+                Symbol *sym = symTables.insert_symbol(temp->attr.name, temp->pos);
+                if (sym){
+                    if (node->childs[0]->childs[0]){
+                        if(node->childs[0]->childs[0]->nodekind == ExpK){
+                            sym->type = node->childs[0]->childs[0]->type;
+                            temp->type = node->childs[0]->childs[0]->type;
+                        }else{
+                            sym->type = node->childs[0]->childs[1]->type;
+                            temp->type = node->childs[0]->childs[1]->type;
+                        }
+                    }
+                    sym->label = (sym->name + '_' + to_string(sym->id)).c_str();
+                    temp->attr.val = (void*) sym;
+                } else {
+                    erroring("变量重复定义", temp->pos);
+                    temp->attr.val = nullptr;
+                }
+            }
+            temp = temp->sibling;
+        }
+        if(node->sibling == nullptr){
+            return;
+        }
+        BuildSymTable(node->sibling, true);
+        return;
+    }
+    if(node->nodekind == ExpK && node->kind.exp == IdK){
+        Symbol *sym = symTables.find(node->attr.name, node->pos);
+        if(!sym){
+            ShowNode(node);
+            erroring("变量未声明", node->pos);
+        }else{
+            node->attr.val = (void*) symTables.find(node->attr.name, node->pos);
+            node->type = (DeclType)sym->type;
+        }
+        if(node->sibling == nullptr){
+            return;
+        }
+        BuildSymTable(node->sibling, true);
+        return;
+    }
+
+
+    if(node->nodekind == StmtK && node->kind.stmt == CompK){
+        if(noParas){
+            symTables.begin_sub_scope(node->pos);
+        }
+        for(int i = 0; i < MAXCHILDREN; i++) {
+            if(node->childs[i] != NULL)
+            {
+                BuildSymTable(node->childs[i], true);
+            }
+        }
+        symTables.end_sub_scope((Coordinate*)node->attr.val);
+        if(node->sibling == nullptr){
+            return;
+        }
+        BuildSymTable(node->sibling, true);
+        return;
+    }
+
+    for(int i = 0; i < MAXCHILDREN; i++) {
+        if(node->childs[i] != NULL)
+        {
+            BuildSymTable(node->childs[i], true);
+        }
+    }
+
+    if(node->sibling == nullptr){
+        return;
+    }
+    BuildSymTable(node->sibling, true);
+    return ;
+}
+
 void ShowNode(TreeNode *p) {
     string type = "";
     string detail = "";
@@ -162,12 +286,6 @@ void ShowNode(TreeNode *p) {
         {
             case IfK:
                 type = "if statement";
-                break;
-            case IfElseK:
-                type = "if-else statement";
-                break;
-            case ElseK:
-                type = "else statement";
                 break;
             case DoWhileK:
                 type = "do-while statement";
@@ -210,6 +328,9 @@ void ShowNode(TreeNode *p) {
         } else if (p->kind.exp == StrConstK) {
             type = "StrConst Declaration";
             detail = "value: " + string((char*)p->attr.val);
+        } else if (p->kind.exp == CharConstK) {
+            type = "CharConst Declaration";
+            detail = "value: " + to_string(*((int*)p->attr.val)) ;
         }else if (p->kind.exp == TypeK) {
             type = "Type Specifier";
             switch (p->type) {
@@ -270,7 +391,7 @@ void ShowNode(TreeNode *p) {
     //     default:
     //         break;
     // }
-    cout << setw(13) << "temp_val: " << p->temp_var;
+    cout << setw(13) << p->label.begin_label << p->label.end_label << p->label.next_label << p->label.true_label << p->label.false_label;
     cout << setw(18) << child_lineno;
     for (int i = 0; i < MAXCHILDREN; ++i) {
         if (p->childs[i] != NULL) {
@@ -328,7 +449,11 @@ int str2int(string num){
         if(num[2] >= '0' && num[2] <= '9'){
             val += num[2] - '0';
         }else{
-            val += num[2] - 'A' + 10;
+            if(num[2] >= 'A' && num[2] <= 'Z'){
+                val += num[2] - 'A' + 10;   
+            } else {
+                val += num[2] - 'a' + 10;   
+            }
         }
         curr = 3;
         while(num[curr]){
@@ -336,7 +461,11 @@ int str2int(string num){
             if(num[curr] >= '0' && num[curr] <= '9'){
                 val += num[curr] - '0';
             }else{
-                val += num[curr] - 'A' + 10;
+                if(num[2] >= 'A' && num[2] <= 'Z'){
+                    val += num[2] - 'A' + 10;   
+                } else {
+                    val += num[2] - 'a' + 10;   
+                }
             }
             curr ++;
         }
@@ -355,9 +484,23 @@ TreeNode* newIntConstNode(char* num){
 }
 
 TreeNode* newStrConstNode(char* str){
-    TreeNode* node = newTreeNode(ExpK, StrConstK);
-    node->attr.val = (void*)str;
-    rodataNodes.push_back(node);
+    TreeNode* node;
+    if(str[0] == '\''){
+         node = newTreeNode(ExpK, CharConstK);
+         int* temp = new int[1];
+         if (str[1]=='\\'){
+            if(str[2]=='\'') *temp = int(str[1]);
+            else if (str[2]=='n') *temp = 10;
+            else if (str[2]=='t') *temp = 9;
+         } else{
+             *temp = int(str[1]);
+         }
+         node->attr.val = (void*)temp;
+    } else {
+        node = newTreeNode(ExpK, StrConstK);
+        node->attr.val = (void*)str;
+        rodataNodes.push_back(node);
+    }
     node->type = Char;
     return node;
 }
@@ -430,42 +573,32 @@ TreeNode* newInitNode(TreeNode* id, TreeNode* init){
     return node;
 }
 
-TreeNode * newWhileStmtNode(int kind, TreeNode* expr, TreeNode* stmt){
-    TreeNode *node = newTreeNode(StmtK, kind);
+TreeNode * newWhileStmtNode(TreeNode* expr, TreeNode* stmt){
+    TreeNode *node = newTreeNode(StmtK, WhileK);
     node->childs[0] = expr;
     node->childs[1] = stmt;
     return node;
 }
 
-TreeNode * newIfStmtNode(TreeNode *expr, TreeNode *stmt) {
-    TreeNode *t = newTreeNode(StmtK, IfK); // if-stmt or else-if-stmt
-    t->childs[0] = expr;
-    t->childs[1] = stmt;
-    return t;
+TreeNode * newSelectiveStmtNode(TreeNode *expr, TreeNode * if_stmt, TreeNode * else_stmt) {
+    TreeNode *node = newTreeNode(StmtK, IfK);
+    node->childs[0] = expr;
+    node->childs[1] = if_stmt;
+    node->childs[2] = else_stmt;
+    return node;
 }
 
-TreeNode * newElseStmtNode(TreeNode *stmt) {
-    TreeNode *t = newTreeNode(StmtK, ElseK);
-    t->childs[0] = stmt;
-    return t;
-}
-
-TreeNode * newIfElseStmtNode(TreeNode *If, TreeNode * Else) {
-    TreeNode *t = newTreeNode(StmtK, IfElseK);
-    t->childs[0] = If;
-    t->childs[1] = Else;
-    return t;
-}
-
-TreeNode * newInputStmtNode(TreeNode *opd) {
+TreeNode * newInputStmtNode(TreeNode *str, TreeNode *id) {
     TreeNode *t = newTreeNode(StmtK, InputK);
-    t->childs[0] = opd;
+    t->childs[0] = str;
+    t->childs[1] = id;
     return t;
 }
-TreeNode * newOutputStmtNode(TreeNode *opd) {
-    TreeNode *t = newTreeNode(StmtK, PrintK);
-    t->childs[0] = opd;
-    return t;
+TreeNode * newOutputStmtNode(TreeNode *str, TreeNode *val) {
+    TreeNode *node = newTreeNode(StmtK, PrintK);
+    node->childs[0] = str;
+    node->childs[1] = val;
+    return node;
 }
 
 TreeNode * newComStmtNode(TreeNode *stmts) {

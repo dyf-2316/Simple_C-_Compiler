@@ -35,10 +35,10 @@ public:
     int id;
     string name;
     Coordinate pos;
-    union {
+    struct {
         int Int; 
         char* Char; 
-    }value;
+    } value;
     string label;
     int ref;
     int type;

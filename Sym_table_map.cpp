@@ -30,6 +30,8 @@ Symbol :: Symbol(int id, const string &name, const Coordinate& pos){
     this->label = "";
     this->type = 0;
     this->ref = 0;
+    this->value.Int = 0;
+    this->value.Char = nullptr;
 }
 
 int Symbol :: reference(){
@@ -118,12 +120,7 @@ void Sym_table_map :: ShowSymTable(){
         cout <<setw(3) << "#" << sym_table[i]->id ;
         cout << setw(12) << "name: " << sym_table[i]->name;
         cout << setw(12) << "type: " << sym_table[i]->type;
-        if (sym_table[i]->type == 1){
-            cout << setw(12) << "value: " << sym_table[i]->value.Int;
-        } else
-        {
-            cout << setw(12) << "value: " << sym_table[i]->value.Char;
-        }
+        cout << setw(12) << "value: " << sym_table[i]->value.Int;
         cout << setw(15) << "reference: "  << sym_table[i]->ref;
         cout << setw(10) << "line:" << sym_table[i]->pos.line << setw(10) << "column:" << sym_table[i]->pos.column << endl;
     }
